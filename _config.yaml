@@ -1,0 +1,12 @@
+sftp:
+  address: hoge
+  user: hoge
+  pass: hoge
+
+default:
+  remote: hoge
+  local: hoge
+
+directory:
+  - hoge
+  - hoge
