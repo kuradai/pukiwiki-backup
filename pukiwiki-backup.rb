@@ -7,8 +7,8 @@ class SFTP
     begin
       config = YAML.load_file("config.yaml")
       puts "Load config file"
-      @remote = config["default"]["remote"]
-      @local = config["default"]["local"] + "-" + Time.now.strftime("%y-%m-%d")
+      @remote    = config["default"]["remote"]
+      @local     = config["default"]["local"] + "_" + Time.now.strftime("%y-%m-%d")
       @directory = config["directory"]
     rescue => e
       puts "Can't load config file"
@@ -17,7 +17,12 @@ class SFTP
     end
 
     begin
-      @sftp = Net::SFTP.start(config['sftp']['address'], config['sftp']['user'], :password => config['sftp']['pass'])
+      @sftp =
+        Net::SFTP.start(
+          config['sftp']['address'],
+          config['sftp']['user'],
+          :password => config['sftp']['pass']
+        )
       puts "Conection Success"
     rescue => e
       puts "Conection Error"
@@ -26,7 +31,7 @@ class SFTP
     end
   end
 
-  def ls(address = @config["default"]["remote"])
+  def ls(address = @remote)
     dir = []
     @sftp.dir.foreach(address) do |entry|
       dir.push entry
@@ -37,24 +42,29 @@ class SFTP
   def mkdir(dir = [])
     dir = [dir] if dir.kind_of?(String)
     dir.each do |item|
-      Dir.mkdir(item, 0777) unless File.exist?(item)
+      unless File.exist?(item)
+        Dir.mkdir(item, 0777) 
+        puts "mkdir: #{item}"
+      end
     end
   end
 
   def download(dir = "wiki")
+    items = 0
     self.mkdir @local + "/" + dir
     address = @remote + "/" + dir
     @sftp.dir.foreach(address) do |item|
       unless item.directory?
+        items += 1
         remote = address + "/" + item.name
         local = @local + "/" + dir + "/" + item.name
-
-        file = @sftp.download!(remote)
-        local_file = File.open(local, "w+")
-        local_file.print file
-        local_file.close
+        print("files: #{items}\r")
+        File.open(local, "w+") do |f|
+          f.print @sftp.download!(remote)
+        end
       end
     end
+    puts ""
   end
 
   def backup
