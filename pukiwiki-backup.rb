@@ -1,5 +1,7 @@
 #coding: utf-8
+require 'rubygems'
 require 'net/sftp'
+require 'git'
 require 'yaml'
 
 class SFTP
@@ -8,7 +10,7 @@ class SFTP
       config = YAML.load_file("config.yaml")
       puts "Load config file"
       @remote    = config["default"]["remote"]
-      @local     = config["default"]["local"] + "_" + Time.now.strftime("%y-%m-%d")
+      @local     = config["default"]["local"]
       @directory = config["directory"]
     rescue => e
       puts "Can't load config file"
@@ -78,7 +80,16 @@ class SFTP
   end
 end
 
+
 sftp = SFTP.new
+sftp.backup
 # sftp.showConfig
 # puts sftp.ls
-sftp.backup
+# sftp.backup
+
+git = Git.open("../kuradai/pukiwiki-backup/")
+git.config('user.name', 'Kuradai AdminBot')
+git.config('user.email', 'admin@kuradai.org')
+git.add(:all=>true) 
+git.commit("Auto Backup" + " " + Time.now.strftime("%y-%m-%d"))
+git.push()
